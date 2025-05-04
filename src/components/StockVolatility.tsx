@@ -37,7 +37,8 @@ const StockVolatility: React.FC<StockVolatilityProps> = ({
 
   useEffect(() => {
     if (selectedStock) {
-      d3.csv(`${dataPath}/${selectedStock}.csv`).then((data) => {
+      const basePath = process.env.PUBLIC_URL || '';
+      d3.csv(`${basePath}/candles/${selectedStock}.csv`).then((data) => {
         const processedData = data.map(d => ({
           market: d.market,
           date: new Date(Number(d.time)),
