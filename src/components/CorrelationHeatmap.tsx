@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
+import * as d3 from 'd3';
 
 interface CorrelationData {
   [key: string]: {
@@ -11,53 +12,155 @@ interface CorrelationHeatmapProps {
   data?: CorrelationData;
 }
 
-const defaultData: CorrelationData = {
-  "ADA-EUR": {
-    "RSI-Returns": 0.271,
-    "SMA-Returns": -0.024,
-    "EMA-Returns": -0.020,
-    "RSI-SMA": 0.000,
-    "RSI-EMA": 0.015,
-    "SMA-EMA": 0.999
-  },
-  "BTC-EUR": {
-    "RSI-Returns": 0.270,
-    "SMA-Returns": -0.011,
-    "EMA-Returns": -0.008,
-    "RSI-SMA": 0.033,
-    "RSI-EMA": 0.046,
-    "SMA-EMA": 1.000
-  },
-  "XRP-EUR": {
-    "RSI-Returns": 0.277,
-    "SMA-Returns": -0.007,
-    "EMA-Returns": -0.003,
-    "RSI-SMA": 0.052,
-    "RSI-EMA": 0.070,
-    "SMA-EMA": 0.999
-  },
-  "LTC-EUR": {
-    "RSI-Returns": 0.239,
-    "SMA-Returns": -0.049,
-    "EMA-Returns": -0.042,
-    "RSI-SMA": 0.019,
-    "RSI-EMA": 0.046,
-    "SMA-EMA": 0.998
-  },
-  "ETH-EUR": {
-    "RSI-Returns": 0.260,
-    "SMA-Returns": -0.049,
-    "EMA-Returns": -0.043,
-    "RSI-SMA": -0.019,
-    "RSI-EMA": 0.007,
-    "SMA-EMA": 0.998
-  }
+// Technical indicator calculations
+const calculateRSI = (prices: number[], period: number = 14): number[] => {
+  const changes = prices.slice(1).map((price, i) => price - prices[i]);
+  const gains = changes.map(change => change > 0 ? change : 0);
+  const losses = changes.map(change => change < 0 ? -change : 0);
+  
+  const avgGain = d3.rollup(gains, v => d3.mean(v) || 0, d => Math.floor(d / period));
+  const avgLoss = d3.rollup(losses, v => d3.mean(v) || 0, d => Math.floor(d / period));
+  
+  return prices.map((_, i) => {
+    if (i < period) return 50; // Default value for initial period
+    const gain = avgGain.get(Math.floor(i / period)) || 0;
+    const loss = avgLoss.get(Math.floor(i / period)) || 0;
+    const rs = gain / (loss || 1); // Avoid division by zero
+    return 100 - (100 / (1 + rs));
+  });
 };
 
-const CorrelationHeatmap: React.FC<CorrelationHeatmapProps> = ({ data = defaultData }) => {
+const calculateSMA = (prices: number[], period: number = 20): number[] => {
+  return prices.map((_, i) => {
+    if (i < period - 1) return prices[i];
+    const sum = prices.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+    return sum / period;
+  });
+};
+
+const calculateEMA = (prices: number[], period: number = 20): number[] => {
+  const multiplier = 2 / (period + 1);
+  return prices.map((price, i) => {
+    if (i === 0) return price;
+    return price * multiplier + prices[i - 1] * (1 - multiplier);
+  });
+};
+
+const calculateReturns = (prices: number[]): number[] => {
+  return prices.map((price, i) => {
+    if (i === 0) return 0;
+    return ((price - prices[i - 1]) / prices[i - 1]) * 100;
+  });
+};
+
+const calculateCorrelation = (x: number[], y: number[]): number => {
+  const n = Math.min(x.length, y.length);
+  if (n < 2) return 0;
+
+  const meanX = d3.mean(x) || 0;
+  const meanY = d3.mean(y) || 0;
+
+  const covariance = d3.sum(x.slice(0, n).map((xi, i) => 
+    (xi - meanX) * (y[i] - meanY)
+  )) / (n - 1);
+
+  const stdX = Math.sqrt(d3.sum(x.slice(0, n).map(xi => 
+    Math.pow(xi - meanX, 2)
+  )) / (n - 1));
+
+  const stdY = Math.sqrt(d3.sum(y.slice(0, n).map(yi => 
+    Math.pow(yi - meanY, 2)
+  )) / (n - 1));
+
+  return covariance / (stdX * stdY);
+};
+
+const CorrelationHeatmap: React.FC<CorrelationHeatmapProps> = () => {
+  const [data, setData] = useState<CorrelationData>({});
   const [activeCrypto, setActiveCrypto] = useState<string>("ALL");
-  
-  const correlationPairs = Object.keys(data["BTC-EUR"]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<string>('');
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const basePath = process.env.PUBLIC_URL || '';
+        const cryptos = ['BTC-EUR', 'ETH-EUR', 'ADA-EUR', 'XRP-EUR', 'LTC-EUR'];
+        
+        const correlationData: CorrelationData = {};
+        let startDate: Date | null = null;
+        let endDate: Date | null = null;
+        
+        for (const crypto of cryptos) {
+          try {
+            const csvData = await d3.csv(`${basePath}/candles/${crypto}.csv`);
+            
+            if (csvData.length >= 2) {
+              // Sort data by time
+              csvData.sort((a, b) => Number(a.time) - Number(b.time));
+              
+              // Update date range
+              const firstDate = new Date(Number(csvData[0].time));
+              const lastDate = new Date(Number(csvData[csvData.length - 1].time));
+              
+              if (!startDate || firstDate < startDate) {
+                startDate = firstDate;
+              }
+              if (!endDate || lastDate > endDate) {
+                endDate = lastDate;
+              }
+              
+              // Extract closing prices
+              const prices = csvData.map(d => parseFloat(d.close));
+              
+              // Calculate indicators
+              const rsi = calculateRSI(prices);
+              const sma = calculateSMA(prices);
+              const ema = calculateEMA(prices);
+              const returns = calculateReturns(prices);
+              
+              // Calculate correlations
+              correlationData[crypto] = {
+                "RSI-Returns": calculateCorrelation(rsi, returns),
+                "SMA-Returns": calculateCorrelation(sma, returns),
+                "EMA-Returns": calculateCorrelation(ema, returns),
+                "RSI-SMA": calculateCorrelation(rsi, sma),
+                "RSI-EMA": calculateCorrelation(rsi, ema),
+                "SMA-EMA": calculateCorrelation(sma, ema)
+              };
+            }
+          } catch (error) {
+            console.error(`Error loading data for ${crypto}:`, error);
+          }
+        }
+        
+        setData(correlationData);
+
+        // Set date range
+        if (startDate && endDate) {
+          const formatDate = (date: Date) => {
+            return date.toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric' 
+            });
+          };
+          setDateRange(`${formatDate(startDate)} to ${formatDate(endDate)}`);
+        }
+      } catch (error) {
+        setError('Failed to load correlation data');
+        console.error('Error loading correlation data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []);
+
+  const correlationPairs = Object.keys(data["BTC-EUR"] || {});
   const cryptoPairs = Object.keys(data);
 
   const getColor = (value: number | null | undefined): string => {
@@ -65,8 +168,7 @@ const CorrelationHeatmap: React.FC<CorrelationHeatmapProps> = ({ data = defaultD
     
     if (value > 0) {
       const intensity = Math.min(Math.abs(value), 1);
-      const blue = Math.floor(255 * intensity);
-      return `rgb(${255-blue}, ${255-blue}, 255)`;
+      return `rgba(31, 119, 180, ${intensity})`;
     } else {
       const intensity = Math.min(Math.abs(value), 1);
       const red = Math.floor(255 * intensity);
@@ -87,14 +189,30 @@ const CorrelationHeatmap: React.FC<CorrelationHeatmapProps> = ({ data = defaultD
 
   const displayData = activeCrypto === "ALL" ? getAverageCorrelations() : data[activeCrypto];
 
+  if (loading) {
+    return (
+      <Box sx={{ width: '100%', p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Typography>Loading correlation data...</Typography>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ width: '100%', p: 2, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Typography color="error">{error}</Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ width: '100%', height: '100%', p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
       <Box sx={{ width: '100%', maxWidth: 700, mx: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Typography variant="h6" align="center" gutterBottom>
+        <Typography variant="h6" align="center" gutterBottom sx={{ fontWeight: 'bold' }}>
           Technical Indicator Correlation Heatmap for Major Cryptocurrencies
         </Typography>
         <Typography variant="subtitle2" color="text.secondary" align="center" gutterBottom>
-          Period: 14 days
+          {dateRange ? `Period: ${dateRange}` : 'Loading period...'}
         </Typography>
         <Box sx={{ my: 2, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <Typography variant="subtitle2" gutterBottom>
@@ -178,7 +296,7 @@ const CorrelationHeatmap: React.FC<CorrelationHeatmapProps> = ({ data = defaultD
               <Typography variant="body2">No Correlation (0.0)</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Box sx={{ width: 16, height: 16, bgcolor: 'primary.main', borderRadius: 0.5, mr: 1 }} />
+              <Box sx={{ width: 16, height: 16, bgcolor: '#1f77b4', borderRadius: 0.5, mr: 1 }} />
               <Typography variant="body2">Strong Positive (1.0)</Typography>
             </Box>
           </Box>

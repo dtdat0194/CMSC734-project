@@ -21,13 +21,15 @@ interface StockVolatilityProps {
   dataPath?: string; // Optional path to where the CSV files are stored
   onStockSelect?: (stock: string) => void;
   className?: string;
+  expanded?: boolean;
 }
 
 const StockVolatility: React.FC<StockVolatilityProps> = ({
   stocks,
   dataPath = '/candles',
   onStockSelect,
-  className = ''
+  className = '',
+  expanded = false
 }) => {
   const [selectedStock, setSelectedStock] = useState<string>(stocks[0]);
   const [stockData, setStockData] = useState<StockData[]>([]);
@@ -51,7 +53,19 @@ const StockVolatility: React.FC<StockVolatilityProps> = ({
     
         processedData.sort((a, b) => a.date.getTime() - b.date.getTime());
         setStockData(processedData);
-        setDateRange([0, processedData.length - 1]);
+
+        // Set default time range to 6 months from 12/31/2022
+        const endDate = new Date('2022-12-31');
+        const startDate = new Date(endDate);
+        startDate.setMonth(startDate.getMonth() - 6);
+
+        const startIndex = processedData.findIndex(d => d.date >= startDate);
+        const endIndex = processedData.findIndex(d => d.date > endDate);
+        
+        setDateRange([
+          startIndex >= 0 ? startIndex : 0,
+          endIndex >= 0 ? endIndex - 1 : processedData.length - 1
+        ]);
       });
     }
   }, [selectedStock, dataPath]);
@@ -73,46 +87,49 @@ const StockVolatility: React.FC<StockVolatilityProps> = ({
   };
 
   return (
-    <div className={`stock-volatility ${className}`}>
+    <div className={`stock-volatility ${className}` + (expanded ? ' expanded' : '')}>
       <h1>Stock Volatility</h1>
-      <StockSelector stocks={stocks} onSelect={handleStockSelect} />
-      <div className="filter">
-        <label>
-          <input
-            type="radio"
-            value="Both"
-            checked={changeFilter === 'Both'}
-            onChange={() => setChangeFilter('Both')}
+      <div className="filter-slider-row">
+        <span style={{ fontWeight: 500, marginRight: 8 }}>Cryptocurrency Pairs</span>
+        <StockSelector stocks={stocks} onSelect={handleStockSelect} />
+        <div className="filter">
+          <label>
+            <input
+              type="radio"
+              value="Both"
+              checked={changeFilter === 'Both'}
+              onChange={() => setChangeFilter('Both')}
+            />
+            Both
+          </label>
+          <label>
+            <input
+              type="radio"
+              value="Up"
+              checked={changeFilter === 'Up'}
+              onChange={() => setChangeFilter('Up')}
+            />
+            Up
+          </label>
+          <label>
+            <input
+              type="radio"
+              value="Down"
+              checked={changeFilter === 'Down'}
+              onChange={() => setChangeFilter('Down')}
+            />
+            Down
+          </label>
+        </div>
+        <div className="date-slider-container">
+          <DateSlider 
+            dates={stockData.map(d => d.date.getTime())} 
+            range={dateRange} 
+            onChange={setDateRange} 
           />
-          Both
-        </label>
-        <label>
-          <input
-            type="radio"
-            value="Up"
-            checked={changeFilter === 'Up'}
-            onChange={() => setChangeFilter('Up')}
-          />
-          Up
-        </label>
-        <label>
-          <input
-            type="radio"
-            value="Down"
-            checked={changeFilter === 'Down'}
-            onChange={() => setChangeFilter('Down')}
-          />
-          Down
-        </label>
+        </div>
       </div>
-      <div className="date-slider-container">
-        <DateSlider 
-          dates={stockData.map(d => d.date.getTime())} 
-          range={dateRange} 
-          onChange={setDateRange} 
-        />
-      </div>
-      <div className="chart-container">
+      <div className={`chart-container${expanded ? ' expanded' : ''}`}>
         <CandlestickChart data={filteredData} />
         <VolumeChart data={filteredData} />
       </div>

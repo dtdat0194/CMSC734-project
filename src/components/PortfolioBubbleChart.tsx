@@ -148,7 +148,7 @@ interface PortfolioBubbleChartProps {
 const PortfolioBubbleChart: React.FC<PortfolioBubbleChartProps> = ({ data = defaultData }) => {
   return (
     <Box sx={{ width: '100%', height: '100%', p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-      <Typography variant="h6" align="center" gutterBottom>
+      <Typography variant="h6" align="center" gutterBottom sx={{ fontWeight: 'bold' }}>
         Portfolio Allocation Risk-Return Analysis
       </Typography>
       <Typography variant="subtitle2" color="text.secondary" align="center" gutterBottom>
