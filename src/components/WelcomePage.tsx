@@ -22,16 +22,13 @@ const WelcomePage: React.FC<{ onScrollToDashboard: () => void; className?: strin
           Welcome to
         </Typography>
         <Typography variant="h3" sx={{ fontWeight: 900, mb: 3, letterSpacing: 3, color: '#ffe082' }}>
-          Crypto Market Analysis Dashboard
+          CRYPTO MARKET ANALYSIS DASHBOARD
         </Typography>
         <Typography variant="h5" sx={{ mb: 2, fontWeight: 500, color: '#fffde7' }}>
-          Our group: <span style={{ fontWeight: 700 }}>Dat Dao, Yuran Ding, Taewon Kang, Rishanth</span>
+          Our group: <span style={{ fontWeight: 700 }}>Dat Dao, Yuran Ding, Taewon Kang, Rishanth Rajendhran</span>
         </Typography>
         <Typography variant="h6" sx={{ mb: 1, fontWeight: 500, color: '#fffde7' }}>
-          Instructor: <span style={{ fontWeight: 700 }}>Leo</span>
-        </Typography>
-        <Typography variant="h6" sx={{ mb: 4, fontWeight: 400, color: '#fffde7' }}>
-          Final Project
+          Instructor: <span style={{ fontWeight: 700 }}>Leo Zhicheng Liu</span>
         </Typography>
         <Button
           variant="contained"

@@ -154,10 +154,10 @@ const PortfolioBubbleChart: React.FC<PortfolioBubbleChartProps> = ({ data = defa
       <Typography variant="subtitle2" color="text.secondary" align="center" gutterBottom>
         Bubble size represents market cap, color indicates technical signal strength
       </Typography>
-      <Box sx={{ flexGrow: 1, width: '100%', minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Box sx={{ width: '100%', maxWidth: 700, height: 400, mx: 'auto' }}>
+      <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 0 }}>
+        <Box sx={{ width: '100%', maxWidth: 700, height: 400 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <ScatterChart margin={{ top: 20, right: 30, bottom: 60, left: 60 }}>
+            <ScatterChart margin={{ top: 20, right: 30, bottom: 60, left: 80 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 type="number" 
@@ -171,11 +171,10 @@ const PortfolioBubbleChart: React.FC<PortfolioBubbleChartProps> = ({ data = defa
                 dataKey="expectedReturn" 
                 name="Expected Return" 
                 domain={[20, 70]}
-                label={{ value: 'Expected Return (%)', angle: -90, position: 'left', offset: 0 }}
+                label={{ value: 'Expected Return (%)', angle: -90, position: 'center', offset: 40 }}
               />
               <ZAxis type="number" dataKey="normalizedSize" range={[100, 1000]} />
               <Tooltip content={<CustomTooltip />} />
-              <Legend />
               {data.map((asset, index) => (
                 <Scatter 
                   key={`asset-${index}`}
@@ -192,6 +191,33 @@ const PortfolioBubbleChart: React.FC<PortfolioBubbleChartProps> = ({ data = defa
               />
             </ScatterChart>
           </ResponsiveContainer>
+        </Box>
+      </Box>
+      {/* Custom legend below the chart */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, mt: 2, mb: 1, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 16, height: 16, bgcolor: '#1f77b4', borderRadius: '50%', mr: 0.5 }} />
+          <Typography variant="body2">BTC-EUR</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 16, height: 16, bgcolor: '#1f77b4', borderRadius: '50%', mr: 0.5 }} />
+          <Typography variant="body2">ETH-EUR</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 16, height: 16, bgcolor: '#5fa8d8', borderRadius: '50%', mr: 0.5 }} />
+          <Typography variant="body2">ADA-EUR</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 16, height: 16, bgcolor: '#93c1e4', borderRadius: '50%', mr: 0.5 }} />
+          <Typography variant="body2">XRP-EUR</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 16, height: 16, bgcolor: '#93c1e4', borderRadius: '50%', mr: 0.5 }} />
+          <Typography variant="body2">LTC-EUR</Typography>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ width: 16, height: 16, bgcolor: '#000', borderRadius: '50%', mr: 0.5, border: '2px solid #ff7300' }} />
+          <Typography variant="body2">Efficient Frontier</Typography>
         </Box>
       </Box>
       <Box sx={{ 
