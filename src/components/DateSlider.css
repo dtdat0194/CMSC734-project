@@ -1,0 +1,46 @@
+.horizontal-slider {
+    width: 100%;
+    height: 16px;
+    margin: 4px 0;
+  }
+  
+  .example-thumb {
+    height: 18px;
+    width: 18px;
+    background-color: #4286f4;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+  }
+  
+  .example-track {
+    top: 0;
+    bottom: 0;
+    height: 8px;
+    background: #ddd;
+    border-radius: 5px;
+  }
+  
+  .example-track-0 {
+    background: #ddd;
+  }
+  
+  .example-track-1 {
+    background: #4286f4;
+  }
+  
+  .date-slider {
+    padding: 10px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    margin: 6px 0;
+  }
+  
+  .date-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: #666;
+  }
