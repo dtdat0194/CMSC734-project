@@ -100,4 +100,88 @@
   width: 100%;
   justify-content: center;
   margin-bottom: 20px;
-} 
+}
+
+/* Glossary term styles */
+.glossary-term {
+  position: relative;
+  cursor: help;
+  border-bottom: 1px dotted #666;
+  color: #333;
+}
+
+.glossary-term:hover::after {
+  content: attr(title);
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 4px;
+  font-size: 14px;
+  white-space: normal;
+  max-width: 350px;
+  width: max-content;
+  z-index: 1000;
+  pointer-events: none;
+  margin-bottom: 5px;
+  text-align: left;
+  word-wrap: break-word;
+}
+
+/* Left-aligned tooltips */
+.glossary-term-correlation:hover::after,
+.glossary-term[title*="Market cap categories"]:hover::after,
+.glossary-term[title*="Size and color intensity are based on log scale of market cap"]:hover::after,
+.glossary-term[title*="Large Cap (darkest blue)"]:hover::after,
+.glossary-term[title*="Mid Cap (medium blue)"]:hover::after,
+.glossary-term[title*="Small Cap (lightest blue)"]:hover::after {
+  left: 0;
+  transform: none;
+}
+
+/* Center-aligned tooltips for treemap legend */
+.glossary-term[title*="Market cap categories"]:hover::after,
+.glossary-term[title*="Size and color intensity are based on log scale of market cap"]:hover::after,
+.glossary-term[title*="Large Cap (darkest blue)"]:hover::after,
+.glossary-term[title*="Mid Cap (medium blue)"]:hover::after,
+.glossary-term[title*="Small Cap (lightest blue)"]:hover::after {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.glossary-term:hover::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.8);
+  margin-bottom: -5px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+/* Left-aligned arrows */
+.glossary-term-correlation:hover::before,
+.glossary-term[title*="Market cap categories"]:hover::before,
+.glossary-term[title*="Size and color intensity are based on log scale of market cap"]:hover::before,
+.glossary-term[title*="Large Cap (darkest blue)"]:hover::before,
+.glossary-term[title*="Mid Cap (medium blue)"]:hover::before,
+.glossary-term[title*="Small Cap (lightest blue)"]:hover::before {
+  left: 10px;
+  transform: none;
+}
+
+/* Center-aligned arrows for treemap legend */
+.glossary-term[title*="Market cap categories"]:hover::before,
+.glossary-term[title*="Size and color intensity are based on log scale of market cap"]:hover::before,
+.glossary-term[title*="Large Cap (darkest blue)"]:hover::before,
+.glossary-term[title*="Mid Cap (medium blue)"]:hover::before,
+.glossary-term[title*="Small Cap (lightest blue)"]:hover::before {
+  left: 50%;
+  transform: translateX(-50%);
+}

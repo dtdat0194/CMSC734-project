@@ -11,6 +11,7 @@ import {
   Legend, 
   ResponsiveContainer
 } from 'recharts';
+import { useCrypto } from '../context/CryptoContext';
 
 interface PortfolioData {
   market: string;
@@ -146,13 +147,20 @@ interface PortfolioBubbleChartProps {
 }
 
 const PortfolioBubbleChart: React.FC<PortfolioBubbleChartProps> = ({ data = defaultData }) => {
+  const { selectedCrypto, setSelectedCrypto } = useCrypto();
+
+  const getOpacity = (market: string) => {
+    if (!selectedCrypto) return 1;
+    return market === selectedCrypto ? 1 : 0.3;
+  };
+
   return (
     <Box sx={{ width: '100%', height: '100%', p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
       <Typography variant="h6" align="center" gutterBottom sx={{ fontWeight: 'bold' }}>
-        Portfolio Allocation Risk-Return Analysis
+        <span className="glossary-term" title="A visualization that helps investors understand the relationship between risk and potential returns for different cryptocurrencies, helping them make informed investment decisions.">Portfolio Allocation Risk-Return Analysis</span>
       </Typography>
       <Typography variant="subtitle2" color="text.secondary" align="center" gutterBottom>
-        Bubble size represents market cap, color indicates technical signal strength
+        <span className="glossary-term" title="The size of each bubble represents the total market value of the cryptocurrency, while the color indicates how strong the technical analysis signals are for that asset.">Bubble size represents market cap, color indicates technical signal strength</span>
       </Typography>
       <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 0 }}>
         <Box sx={{ width: '100%', maxWidth: 700, height: 400 }}>
@@ -164,14 +172,23 @@ const PortfolioBubbleChart: React.FC<PortfolioBubbleChartProps> = ({ data = defa
                 dataKey="risk" 
                 name="Risk" 
                 domain={[25, 45]}
-                label={{ value: 'Risk/Volatility (%)', position: 'bottom', offset: 0 }}
+                label={{
+                  value: 'Risk/Volatility (%)',
+                  position: 'bottom',
+                  offset: 0
+                }}
               />
               <YAxis 
                 type="number" 
                 dataKey="expectedReturn" 
                 name="Expected Return" 
                 domain={[20, 70]}
-                label={{ value: 'Expected Return (%)', angle: -90, position: 'center', offset: 40 }}
+                label={{
+                  value: 'Expected Return (%)',
+                  angle: -90,
+                  position: 'left',
+                  offset: 0
+                }}
               />
               <ZAxis type="number" dataKey="normalizedSize" range={[100, 1000]} />
               <Tooltip content={<CustomTooltip />} />
@@ -181,6 +198,9 @@ const PortfolioBubbleChart: React.FC<PortfolioBubbleChartProps> = ({ data = defa
                   name={asset.market} 
                   data={[asset]} 
                   fill={asset.fill}
+                  opacity={getOpacity(asset.market)}
+                  onClick={() => setSelectedCrypto(asset.market)}
+                  cursor="pointer"
                 />
               ))}
               <Scatter 
@@ -195,29 +215,25 @@ const PortfolioBubbleChart: React.FC<PortfolioBubbleChartProps> = ({ data = defa
       </Box>
       {/* Custom legend below the chart */}
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 3, mt: 2, mb: 1, flexWrap: 'wrap' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ width: 16, height: 16, bgcolor: '#1f77b4', borderRadius: '50%', mr: 0.5 }} />
-          <Typography variant="body2">BTC-EUR</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ width: 16, height: 16, bgcolor: '#1f77b4', borderRadius: '50%', mr: 0.5 }} />
-          <Typography variant="body2">ETH-EUR</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ width: 16, height: 16, bgcolor: '#5fa8d8', borderRadius: '50%', mr: 0.5 }} />
-          <Typography variant="body2">ADA-EUR</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ width: 16, height: 16, bgcolor: '#93c1e4', borderRadius: '50%', mr: 0.5 }} />
-          <Typography variant="body2">XRP-EUR</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ width: 16, height: 16, bgcolor: '#93c1e4', borderRadius: '50%', mr: 0.5 }} />
-          <Typography variant="body2">LTC-EUR</Typography>
-        </Box>
+        {data.map((asset) => (
+          <Box 
+            key={asset.market}
+            sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              opacity: getOpacity(asset.market),
+              cursor: 'pointer'
+            }}
+            onClick={() => setSelectedCrypto(asset.market)}
+          >
+            <Box sx={{ width: 16, height: 16, bgcolor: asset.fill, borderRadius: '50%', mr: 0.5 }} />
+            <Typography variant="body2">{asset.market.split('-')[0]}</Typography>
+          </Box>
+        ))}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Box sx={{ width: 16, height: 16, bgcolor: '#000', borderRadius: '50%', mr: 0.5, border: '2px solid #ff7300' }} />
-          <Typography variant="body2">Efficient Frontier</Typography>
+          <Typography variant="body2"><span className="glossary-term" title="A curve showing the optimal portfolio combinations that offer the highest expected return for a given level of risk. Points on this curve represent the best possible risk-return tradeoff.">Efficient Frontier</span></Typography>
         </Box>
       </Box>
       <Box sx={{ 
@@ -233,19 +249,19 @@ const PortfolioBubbleChart: React.FC<PortfolioBubbleChartProps> = ({ data = defa
       }}>
         <Paper sx={{ p: 1, bgcolor: 'background.paper' }}>
           <Typography variant="subtitle2" fontWeight="bold" gutterBottom sx={{ fontSize: 14 }}>
-            Technical Signal Legend
+            <span className="glossary-term" title="Technical signals are indicators derived from price and volume data that help predict future price movements. They are used to generate buy, sell, or hold recommendations.">Technical Signal</span> Legend
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5, gap: 1 }}>
             <Box sx={{ width: 10, height: 10, bgcolor: '#1f77b4', borderRadius: 0.5, mr: 0.5 }} />
-            <Typography variant="body2" sx={{ fontSize: 13 }}>Strong Buy (70+)</Typography>
+            <Typography variant="body2" sx={{ fontSize: 13 }}><span className="glossary-term" title="A strong technical signal suggesting high confidence in potential price increase, typically based on multiple positive indicators.">Strong Buy</span> (70+)</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5, gap: 1 }}>
             <Box sx={{ width: 10, height: 10, bgcolor: '#5fa8d8', borderRadius: 0.5, mr: 0.5 }} />
-            <Typography variant="body2" sx={{ fontSize: 13 }}>Buy (60-70)</Typography>
+            <Typography variant="body2" sx={{ fontSize: 13 }}><span className="glossary-term" title="A positive technical signal suggesting potential for price increase, but with less confidence than a strong buy signal.">Buy</span> (60-70)</Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Box sx={{ width: 10, height: 10, bgcolor: '#93c1e4', borderRadius: 0.5, mr: 0.5 }} />
-            <Typography variant="body2" sx={{ fontSize: 13 }}>Hold (50-60)</Typography>
+            <Typography variant="body2" sx={{ fontSize: 13 }}><span className="glossary-term" title="A neutral technical signal suggesting no clear direction for price movement, indicating it may be best to maintain current position.">Hold</span> (50-60)</Typography>
           </Box>
         </Paper>
         <Paper sx={{ p: 1, bgcolor: 'background.paper' }}>

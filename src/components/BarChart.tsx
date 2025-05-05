@@ -9,8 +9,10 @@ import {
   CartesianGrid, 
   Tooltip, 
   Legend, 
-  ResponsiveContainer 
+  ResponsiveContainer, 
+  Cell 
 } from 'recharts';
+import { useCrypto } from '../context/CryptoContext';
 
 interface BarData {
   name: string;
@@ -30,7 +32,7 @@ const CustomTooltip: React.FC<CustomTooltipProps> = ({ active, payload }) => {
     const data = payload[0].payload;
     return (
       <Paper sx={{ p: 2, bgcolor: 'background.paper' }}>
-        <Typography variant="subtitle1" fontWeight="bold">{data.name}</Typography>
+        <Typography variant="subtitle1" fontWeight="bold">{data.name.split('-')[0]}</Typography>
         <Typography variant="body2">Value: {data.value}%</Typography>
       </Paper>
     );
@@ -51,6 +53,7 @@ const BarChart: React.FC<BarChartProps> = ({
 }) => {
   const [data, setData] = useState<BarData[]>([]);
   const [dateRange, setDateRange] = useState<string>('');
+  const { selectedCrypto, setSelectedCrypto } = useCrypto();
 
   useEffect(() => {
     const loadData = async () => {
@@ -96,7 +99,7 @@ const BarChart: React.FC<BarChartProps> = ({
             }
             
             performanceData.push({
-              name: crypto.split('-')[0],
+              name: crypto,
               value: parseFloat(percentageChange.toFixed(1)),
               fill
             });
@@ -126,6 +129,11 @@ const BarChart: React.FC<BarChartProps> = ({
     loadData();
   }, []);
 
+  const getOpacity = (name: string) => {
+    if (!selectedCrypto) return 1;
+    return name === selectedCrypto ? 1 : 0.3;
+  };
+
   return (
     <Box sx={{ width: '100%', p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
       <Typography variant="h6" align="center" gutterBottom sx={{ fontWeight: 'bold' }}>
@@ -142,11 +150,26 @@ const BarChart: React.FC<BarChartProps> = ({
             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
+            <XAxis dataKey="name" tickFormatter={name => name.split('-')[0]} />
             <YAxis label={{ value: yAxisLabel, angle: -90, position: 'insideLeft' }} />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
-            <Bar dataKey="value" name="Performance" />
+            <Bar
+              dataKey="value"
+              name="Performance"
+              isAnimationActive={false}
+              onClick={(_, index) => setSelectedCrypto(data[index].name)}
+              fillOpacity={1}
+            >
+              {data.map((entry) => (
+                <Cell
+                  key={entry.name}
+                  fill={entry.fill}
+                  opacity={getOpacity(entry.name)}
+                  cursor="pointer"
+                />
+              ))}
+            </Bar>
           </RechartsBarChart>
         </ResponsiveContainer>
       </Box>

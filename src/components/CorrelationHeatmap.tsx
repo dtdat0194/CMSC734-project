@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Button, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material';
 import * as d3 from 'd3';
+import { useCrypto } from '../context/CryptoContext';
+
+interface CryptoData {
+  name: string;
+  value: number;
+  fill: string;
+  [key: string]: string | number;
+}
 
 interface CorrelationData {
-  [key: string]: {
-    [key: string]: number;
-  };
+  [key: string]: CryptoData;
+}
+
+interface DisplayData {
+  [key: string]: number;
 }
 
 interface CorrelationHeatmapProps {
@@ -76,11 +86,64 @@ const calculateCorrelation = (x: number[], y: number[]): number => {
 };
 
 const CorrelationHeatmap: React.FC<CorrelationHeatmapProps> = () => {
+  const { selectedCrypto } = useCrypto();
   const [data, setData] = useState<CorrelationData>({});
   const [activeCrypto, setActiveCrypto] = useState<string>("ALL");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<string>('');
+
+  // Sync activeCrypto with selectedCrypto from context
+  useEffect(() => {
+    if (selectedCrypto && selectedCrypto !== activeCrypto) {
+      setActiveCrypto(selectedCrypto);
+    }
+  }, [selectedCrypto]);
+
+  // Define correlation pairs
+  const correlationPairs = [
+    'RSI-SMA',
+    'RSI-EMA',
+    'SMA-EMA',
+    'RSI-Returns',
+    'SMA-Returns',
+    'EMA-Returns'
+  ];
+
+  const cryptoPairs = Object.keys(data);
+
+  const getColor = (value: number | null | undefined): string => {
+    if (value === null || value === undefined) return '#f5f5f5';
+    
+    if (value > 0) {
+      const intensity = Math.min(Math.abs(value), 1);
+      return `rgba(31, 119, 180, ${intensity})`;
+    } else {
+      const intensity = Math.min(Math.abs(value), 1);
+      const red = Math.floor(255 * intensity);
+      return `rgb(255, ${255-red}, ${255-red})`;
+    }
+  };
+
+  const getAverageCorrelations = () => {
+    const averages: DisplayData = {};
+    
+    correlationPairs.forEach(pair => {
+      const sum = cryptoPairs.reduce((acc, crypto) => {
+        const value = data[crypto]?.[pair];
+        return acc + (typeof value === 'number' ? value : 0);
+      }, 0);
+      averages[pair] = sum / cryptoPairs.length;
+    });
+    
+    return averages;
+  };
+
+  const displayData: DisplayData = activeCrypto === "ALL" ? getAverageCorrelations() : 
+    Object.entries(data[activeCrypto] || {}).reduce((acc, [key, value]) => {
+      acc[key] = typeof value === 'number' ? value : 0;
+      return acc;
+    }, {} as DisplayData);
 
   useEffect(() => {
     const loadData = async () => {
@@ -98,10 +161,10 @@ const CorrelationHeatmap: React.FC<CorrelationHeatmapProps> = () => {
             const csvData = await d3.csv(`${basePath}/candles/${crypto}.csv`);
             
             if (csvData.length >= 2) {
-              // Sort data by time
+              // Sort data by time (timestamp is in milliseconds) from oldest to newest
               csvData.sort((a, b) => Number(a.time) - Number(b.time));
               
-              // Update date range
+              // Get the first and last entries (now properly ordered from past to future)
               const firstDate = new Date(Number(csvData[0].time));
               const lastDate = new Date(Number(csvData[csvData.length - 1].time));
               
@@ -111,24 +174,31 @@ const CorrelationHeatmap: React.FC<CorrelationHeatmapProps> = () => {
               if (!endDate || lastDate > endDate) {
                 endDate = lastDate;
               }
+
+              // Extract price data
+              const prices = csvData.map(row => parseFloat(row.close));
               
-              // Extract closing prices
-              const prices = csvData.map(d => parseFloat(d.close));
-              
-              // Calculate indicators
+              // Calculate technical indicators
               const rsi = calculateRSI(prices);
               const sma = calculateSMA(prices);
               const ema = calculateEMA(prices);
               const returns = calculateReturns(prices);
               
               // Calculate correlations
+              const correlations = {
+                'RSI-SMA': calculateCorrelation(rsi, sma),
+                'RSI-EMA': calculateCorrelation(rsi, ema),
+                'SMA-EMA': calculateCorrelation(sma, ema),
+                'RSI-Returns': calculateCorrelation(rsi, returns),
+                'SMA-Returns': calculateCorrelation(sma, returns),
+                'EMA-Returns': calculateCorrelation(ema, returns)
+              };
+              
               correlationData[crypto] = {
-                "RSI-Returns": calculateCorrelation(rsi, returns),
-                "SMA-Returns": calculateCorrelation(sma, returns),
-                "EMA-Returns": calculateCorrelation(ema, returns),
-                "RSI-SMA": calculateCorrelation(rsi, sma),
-                "RSI-EMA": calculateCorrelation(rsi, ema),
-                "SMA-EMA": calculateCorrelation(sma, ema)
+                name: crypto.split('-')[0],
+                value: parseFloat(((prices[prices.length - 1] - prices[0]) / prices[0] * 100).toFixed(1)),
+                fill: '#1f77b4',
+                ...correlations
               };
             }
           } catch (error) {
@@ -160,34 +230,11 @@ const CorrelationHeatmap: React.FC<CorrelationHeatmapProps> = () => {
     loadData();
   }, []);
 
-  const correlationPairs = Object.keys(data["BTC-EUR"] || {});
-  const cryptoPairs = Object.keys(data);
-
-  const getColor = (value: number | null | undefined): string => {
-    if (value === null || value === undefined) return '#f5f5f5';
-    
-    if (value > 0) {
-      const intensity = Math.min(Math.abs(value), 1);
-      return `rgba(31, 119, 180, ${intensity})`;
-    } else {
-      const intensity = Math.min(Math.abs(value), 1);
-      const red = Math.floor(255 * intensity);
-      return `rgb(255, ${255-red}, ${255-red})`;
-    }
+  // Use activeCrypto for tab opacity
+  const getTabOpacity = (crypto: string) => {
+    if (activeCrypto === "ALL") return 1;
+    return crypto === activeCrypto ? 1 : 0.3;
   };
-
-  const getAverageCorrelations = () => {
-    const averages: { [key: string]: number } = {};
-    
-    correlationPairs.forEach(pair => {
-      const sum = cryptoPairs.reduce((acc, crypto) => acc + data[crypto][pair], 0);
-      averages[pair] = sum / cryptoPairs.length;
-    });
-    
-    return averages;
-  };
-
-  const displayData = activeCrypto === "ALL" ? getAverageCorrelations() : data[activeCrypto];
 
   if (loading) {
     return (
@@ -209,7 +256,7 @@ const CorrelationHeatmap: React.FC<CorrelationHeatmapProps> = () => {
     <Box sx={{ width: '100%', height: '100%', p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
       <Box sx={{ width: '100%', maxWidth: 700, mx: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Typography variant="h6" align="center" gutterBottom sx={{ fontWeight: 'bold' }}>
-          Technical Indicator Correlation Heatmap for Major Cryptocurrencies
+          <span className="glossary-term glossary-term-correlation" title="Tells how two values move together. 1.0 = move together, -1.0 = move opposite, 0 = no relationship.">Correlation</span> Strength Between <span className="glossary-term" title="A calculated value based on past price or volume (like RSI, SMA, EMA) that helps analyze market trends and guide trading decisions.">Technical Indicators</span> for Major Cryptos
         </Typography>
         <Typography variant="subtitle2" color="text.secondary" align="center" gutterBottom>
           {dateRange ? `Period: ${dateRange}` : 'Loading period...'}
@@ -226,12 +273,13 @@ const CorrelationHeatmap: React.FC<CorrelationHeatmapProps> = () => {
             >
               ALL
             </Button>
-            {cryptoPairs.map(crypto => (
+            {Object.keys(data).map(crypto => (
               <Button
                 key={crypto}
                 variant={activeCrypto === crypto ? "contained" : "outlined"}
                 size="small"
                 onClick={() => setActiveCrypto(crypto)}
+                sx={{ opacity: getTabOpacity(crypto) }}
               >
                 {crypto}
               </Button>
@@ -255,7 +303,9 @@ const CorrelationHeatmap: React.FC<CorrelationHeatmapProps> = () => {
                       {pair}
                     </TableCell>
                     <TableCell align="center">
-                      {displayData[pair].toFixed(3)}
+                      {typeof displayData[pair] === 'number' && !isNaN(displayData[pair])
+                        ? displayData[pair].toFixed(3)
+                        : 'N/A'}
                     </TableCell>
                     <TableCell>
                       <Box
@@ -269,9 +319,15 @@ const CorrelationHeatmap: React.FC<CorrelationHeatmapProps> = () => {
                       >
                         <Box
                           sx={{
-                            width: `${Math.abs(displayData[pair] * 100)}%`,
+                            width:
+                              typeof displayData[pair] === 'number' && !isNaN(displayData[pair])
+                                ? `${Math.abs(displayData[pair] * 100)}%`
+                                : '0%',
                             height: '100%',
-                            bgcolor: getColor(displayData[pair])
+                            bgcolor:
+                              typeof displayData[pair] === 'number' && !isNaN(displayData[pair])
+                                ? getColor(displayData[pair])
+                                : 'transparent'
                           }}
                         />
                       </Box>
@@ -284,20 +340,42 @@ const CorrelationHeatmap: React.FC<CorrelationHeatmapProps> = () => {
         </Box>
         <Box sx={{ mt: 3, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <Typography variant="subtitle1" gutterBottom>
-            Correlation Legend
+            <span className="glossary-term" title="A guide showing the meaning of different correlation values and their visual representation in the heatmap.">Correlation Legend</span>
           </Typography>
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', width: '100%' }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Box sx={{ width: 16, height: 16, bgcolor: 'error.main', borderRadius: 0.5, mr: 1 }} />
-              <Typography variant="body2">Strong Negative (-1.0)</Typography>
+              <Typography variant="body2"><span className="glossary-term" title="A perfect negative correlation where two indicators move in exactly opposite directions.">Strong Negative</span> (-1.0)</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Box sx={{ width: 16, height: 16, bgcolor: 'grey.300', borderRadius: 0.5, mr: 1 }} />
-              <Typography variant="body2">No Correlation (0.0)</Typography>
+              <Typography variant="body2"><span className="glossary-term" title="No relationship between the indicators, they move independently of each other.">No Correlation</span> (0.0)</Typography>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
               <Box sx={{ width: 16, height: 16, bgcolor: '#1f77b4', borderRadius: 0.5, mr: 1 }} />
-              <Typography variant="body2">Strong Positive (1.0)</Typography>
+              <Typography variant="body2"><span className="glossary-term" title="A perfect positive correlation where two indicators move in exactly the same direction.">Strong Positive</span> (1.0)</Typography>
+            </Box>
+          </Box>
+        </Box>
+        <Box sx={{ mt: 3, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Typography variant="subtitle1" gutterBottom>
+            <span className="glossary-term" title="Technical indicators are mathematical calculations based on price, volume, or other market data that help traders make decisions.">Technical Indicators</span>
+          </Typography>
+          <Box component="ul" sx={{ listStyle: 'none', padding: 0, margin: 0, width: '100%', maxWidth: 600 }}>
+            <Box component="li" sx={{ mb: 1 }}>
+              <Typography variant="body2">
+                <strong>RSI (Relative Strength Index):</strong> Measures if a coin is overbought or oversold. High RSI = may be overbought; Low RSI = may be oversold.
+              </Typography>
+            </Box>
+            <Box component="li" sx={{ mb: 1 }}>
+              <Typography variant="body2">
+                <strong>SMA (Simple Moving Average):</strong> Calculates the average price over a set time (e.g., 14 days), smoothing out short-term price noise.
+              </Typography>
+            </Box>
+            <Box component="li" sx={{ mb: 1 }}>
+              <Typography variant="body2">
+                <strong>EMA (Exponential Moving Average):</strong> Like SMA but weights recent prices more, making it more responsive to recent trends.
+              </Typography>
             </Box>
           </Box>
         </Box>

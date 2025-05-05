@@ -88,7 +88,7 @@ const StockVolatility: React.FC<StockVolatilityProps> = ({
 
   return (
     <div className={`stock-volatility ${className}` + (expanded ? ' expanded' : '')}>
-      <h1>Stock Volatility</h1>
+      <h1><span className="glossary-term" title="A measure of how much a stock's price fluctuates over time. Higher volatility means larger price swings, indicating more risk and potential for both gains and losses.">Stock Volatility</span></h1>
       <div className="filter-slider-row">
         <span style={{ fontWeight: 500, marginRight: 8 }}>Cryptocurrency Pairs</span>
         <StockSelector stocks={stocks} onSelect={handleStockSelect} />
@@ -100,7 +100,7 @@ const StockVolatility: React.FC<StockVolatilityProps> = ({
               checked={changeFilter === 'Both'}
               onChange={() => setChangeFilter('Both')}
             />
-            Both
+            <span className="glossary-term" title="Shows all price movements, both increases and decreases, giving a complete picture of market activity.">Both</span>
           </label>
           <label>
             <input
@@ -109,7 +109,7 @@ const StockVolatility: React.FC<StockVolatilityProps> = ({
               checked={changeFilter === 'Up'}
               onChange={() => setChangeFilter('Up')}
             />
-            Up
+            <span className="glossary-term" title="Shows only days when the price closed higher than it opened, indicating positive market sentiment.">Up</span>
           </label>
           <label>
             <input
@@ -118,7 +118,7 @@ const StockVolatility: React.FC<StockVolatilityProps> = ({
               checked={changeFilter === 'Down'}
               onChange={() => setChangeFilter('Down')}
             />
-            Down
+            <span className="glossary-term" title="Shows only days when the price closed lower than it opened, indicating negative market sentiment.">Down</span>
           </label>
         </div>
         <div className="date-slider-container">
@@ -135,12 +135,12 @@ const StockVolatility: React.FC<StockVolatilityProps> = ({
       </div>
       <div className="legend-container">
         <div className="legend">
-          <div><span className="legend-color up"></span> Up</div>
-          <div><span className="legend-color down"></span> Down</div>
+          <div><span className="legend-color up"></span> <span className="glossary-term" title="Days when the price closed higher than it opened, shown in green.">Up</span></div>
+          <div><span className="legend-color down"></span> <span className="glossary-term" title="Days when the price closed lower than it opened, shown in red.">Down</span></div>
         </div>
         <div className="legend">
-          <div><span className="legend-color volume"></span> Volume Intensity</div>
-          <div><span className="legend-line"></span> Average Volume</div>
+          <div><span className="legend-color volume"></span> <span className="glossary-term" title="Shows the intensity of trading activity, with darker colors indicating higher trading volume.">Volume Intensity</span></div>
+          <div><span className="legend-line"></span> <span className="glossary-term" title="The average trading volume over the selected time period, shown as a blue line.">Average Volume</span></div>
         </div>
       </div>
     </div>
