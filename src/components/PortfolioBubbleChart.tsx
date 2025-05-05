@@ -157,7 +157,7 @@ const PortfolioBubbleChart: React.FC<PortfolioBubbleChartProps> = ({ data = defa
   return (
     <Box sx={{ width: '100%', height: '100%', p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
       <Typography variant="h6" align="center" gutterBottom sx={{ fontWeight: 'bold' }}>
-        <span className="glossary-term" title="A visualization that helps investors understand the relationship between risk and potential returns for different cryptocurrencies, helping them make informed investment decisions.">Portfolio Allocation Risk-Return Analysis</span>
+        <span className="glossary-term" title="A visualization that helps investors understand the relationship between risk and potential returns for different cryptocurrencies, helping them make informed investment decisions.">Portfolio Allocation Risk-Return Analysis for Major Cryptos</span>
       </Typography>
       <Typography variant="subtitle2" color="text.secondary" align="center" gutterBottom>
         <span className="glossary-term" title="The size of each bubble represents the total market value of the cryptocurrency, while the color indicates how strong the technical analysis signals are for that asset.">Bubble size represents market cap, color indicates technical signal strength</span>

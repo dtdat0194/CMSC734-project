@@ -47,7 +47,7 @@ interface BarChartProps {
 }
 
 const BarChart: React.FC<BarChartProps> = ({ 
-  title = 'Cryptocurrency Performance',
+  title = 'Cryptocurrency Performance for Major Cryptos',
   subtitle = 'Percentage change over the last 30 days',
   yAxisLabel = 'Change (%)'
 }) => {
