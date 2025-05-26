@@ -19,7 +19,7 @@ A comprehensive dashboard for visualizing cryptocurrency market data, built with
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/dtdat0194/CMSC734-project.git
+git clone https://github.com/dtdat0194/CMSC734-Visualization-Dashboard.git 
 cd crypto-visualization-dashboard
 ```
 
